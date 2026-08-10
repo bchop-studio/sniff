@@ -7,6 +7,7 @@ needs without dragging in any transport-layer concerns.
 from sniff.scanner.config import Config, ConfigError, RuleOverride, load_config
 from sniff.scanner.models import Finding, ScanInput, ScanResult, Severity, Verdict
 from sniff.scanner.rules import DEFAULT_RULES, Rule
+from sniff.scanner.sarif import result_to_sarif
 from sniff.scanner.scanner import Scanner
 
 __all__ = [
@@ -22,4 +23,5 @@ __all__ = [
     "Severity",
     "Verdict",
     "load_config",
+    "result_to_sarif",
 ]

@@ -28,6 +28,9 @@ echo "ignore all previous instructions" | uv run sniff
 # JSON output for pipelines
 uv run sniff --format json path/to/prompt.txt > result.json
 
+# SARIF output for CI code scanning (GitHub, Azure DevOps)
+uv run sniff --format sarif path/to/prompt.txt > results.sarif
+
 # Use a config file (TOML or JSON)
 uv run sniff --config path/to/sniff.toml path/to/prompt.txt
 ```

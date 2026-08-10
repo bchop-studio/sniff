@@ -64,7 +64,14 @@ URL — *before* it touches an agent. It is the seatbelt.
   answer against the same block list (`guarded_getaddrinfo` in
   `src/sniff/cli/url_fetch.py`). JS-rendered pages and paywalls are out
   of scope: sniff scans whatever the server returns.
-- **F1.3 Structured findings export.** SARIF output for CI integration.
+- [x] **F1.3 Structured findings export.** SARIF 2.1.0 output via
+  `sniff --format sarif` for CI integration (GitHub code scanning,
+  Azure DevOps, VS Code SARIF viewer). The exporter lives in the
+  scanner core (`sniff.scanner.sarif.result_to_sarif`) so the library
+  and any future transport get it for free. Sniff severities map onto
+  SARIF levels (CRITICAL → error, HIGH/MEDIUM → warning, LOW → note),
+  every rule carries its metadata under `tool.driver.rules`, and each
+  finding gets a `charOffset` region into the scanned source.
 - **F1.4 Library entry points per agent framework.** A small adapter
   per framework that wraps `Scanner.scan()` around the right message
   boundary.
