@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 
+from sniff.scanner.config import Config
 from sniff.scanner.models import (
     Finding,
     ScanInput,
@@ -46,19 +47,64 @@ def _make_excerpt(content: str, start: int, end: int, window: int) -> str:
     return f"{prefix}{snippet}{suffix}"
 
 
+def _apply_config(rules: tuple[Rule, ...], config: Config | None) -> tuple[Rule, ...]:
+    """Apply Config overrides to the rule tuple.
+
+    - Rules with `enabled: false` are dropped.
+    - Rules with a `severity` override are rebuilt with the new severity
+      (everything else — pattern, rationale, name — stays the same).
+
+    A None config returns the rules unchanged.
+    """
+    if config is None:
+        return rules
+
+    overrides = config.rules
+    out: list[Rule] = []
+    for rule in rules:
+        override = overrides.get(rule.rule_id)
+        if override is not None and not override.enabled:
+            continue
+        if override is not None and override.severity is not None:
+            out.append(
+                Rule(
+                    rule_id=rule.rule_id,
+                    name=rule.name,
+                    severity=override.severity,
+                    pattern=rule.pattern,
+                    rationale=rule.rationale,
+                    excerpt_window=rule.excerpt_window,
+                )
+            )
+        else:
+            out.append(rule)
+    return tuple(out)
+
+
 class Scanner:
     """Runs a configurable rule set against arbitrary text.
 
     Construct once, call `.scan(...)` many times. The default rule set is
-    `DEFAULT_RULES`; tests and the proxy can pass their own tuple.
+    `DEFAULT_RULES`; tests and the proxy can pass their own tuple, or
+    pass a `Config` to apply enable/severity overrides on top.
     """
 
-    def __init__(self, rules: tuple[Rule, ...] = DEFAULT_RULES) -> None:
-        self._rules = rules
+    def __init__(
+        self,
+        rules: tuple[Rule, ...] | None = None,
+        config: Config | None = None,
+    ) -> None:
+        base_rules = rules if rules is not None else DEFAULT_RULES
+        self._rules = _apply_config(base_rules, config)
+        self._config = config
 
     @property
     def rules(self) -> tuple[Rule, ...]:
         return self._rules
+
+    @property
+    def config(self) -> Config | None:
+        return self._config
 
     def scan(self, scan_input: ScanInput) -> ScanResult:
         """Scan one piece of text. Never raises on bad input — bad bytes
