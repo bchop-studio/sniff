@@ -8,6 +8,7 @@ same way.
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -20,6 +21,8 @@ from sniff.cli import url_fetch
 from sniff.cli.url_fetch import FetchError
 from sniff.scanner import Config, ConfigError, ScanInput, Scanner
 from sniff.scanner.models import ScanResult, Severity, Verdict
+from sniff.scanner.rules import Rule
+from sniff.scanner.sarif import result_to_sarif
 
 console = Console(stderr=True)
 stdout_console = Console()
@@ -71,6 +74,10 @@ def _print_human(result: ScanResult) -> None:
 
 def _print_json(result: ScanResult) -> None:
     stdout_console.print_json(result.model_dump_json())
+
+
+def _print_sarif(result: ScanResult, rules: tuple[Rule, ...]) -> None:
+    stdout_console.print_json(json.dumps(result_to_sarif(result, rules)))
 
 
 def _read_text_from_stdin() -> str:
@@ -125,10 +132,10 @@ def _exit_code_for(result: ScanResult, cfg: Config) -> int:
 @click.option(
     "--format",
     "fmt",
-    type=click.Choice(["human", "json"], case_sensitive=False),
+    type=click.Choice(["human", "json", "sarif"], case_sensitive=False),
     default="human",
     show_default=True,
-    help="Output format.",
+    help="Output format. 'sarif' emits SARIF 2.1.0 for CI code scanning.",
 )
 @click.option(
     "--exit-code/--no-exit-code",
@@ -206,6 +213,8 @@ def cli(
 
     if fmt == "json":
         _print_json(result)
+    elif fmt == "sarif":
+        _print_sarif(result, scanner.rules)
     else:
         _print_human(result)
 
