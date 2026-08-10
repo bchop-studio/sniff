@@ -1,0 +1,14 @@
+From: alice@example.com
+To: bob@example.com
+Subject: Q3 planning notes
+
+Hey Bob,
+
+Wrote up the Q3 plan draft. Highlights:
+- Ship the auth refactor behind a feature flag on Tuesday.
+- Migrate the analytics dashboard off the legacy warehouse.
+- Hire one more backend engineer (Loom is approved).
+
+Coffee Thursday?
+
+— Alice

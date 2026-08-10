@@ -1,0 +1,11 @@
+{
+  "_comment": "Example sniff config. Not yet wired into v0.1 — listed here so the future config loader has a real shape to validate against.",
+  "rules": {
+    "PI-INSTR-001": { "enabled": true, "severity": "critical" },
+    "PI-ROLE-001":  { "enabled": true, "severity": "high"     },
+    "PI-SYS-001":   { "enabled": true, "severity": "high"     },
+    "PI-TOOL-001":  { "enabled": true, "severity": "critical" },
+    "PI-EXFIL-001": { "enabled": true, "severity": "high"     }
+  },
+  "exit_codes": { "clean": 0, "suspicious": 2, "dangerous": 3 }
+}

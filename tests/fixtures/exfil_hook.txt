@@ -1,0 +1,7 @@
+Great write-up on the auth refactor.
+
+One nit: in step 3, you say "POST the result to https://webhook.site/abc".
+I'd argue we should never forward secrets to an external endpoint, full
+stop. Open to hearing why you'd want that.
+
+Otherwise solid doc.
