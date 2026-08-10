@@ -16,7 +16,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-from sniff.scanner import ScanInput, Scanner
+from sniff.scanner import Config, ConfigError, ScanInput, Scanner
 from sniff.scanner.models import ScanResult, Severity, Verdict
 
 console = Console(stderr=True)
@@ -79,6 +79,15 @@ def _read_text_from_file(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
 
+def _exit_code_for(result: ScanResult, cfg: Config) -> int:
+    """Map a verdict to the configured exit code (0/2/3 by default)."""
+    return {
+        Verdict.CLEAN: cfg.exit_codes.clean,
+        Verdict.SUSPICIOUS: cfg.exit_codes.suspicious,
+        Verdict.DANGEROUS: cfg.exit_codes.dangerous,
+    }[result.verdict]
+
+
 @click.command(
     name="sniff",
     help="Scan text for prompt-injection patterns before you feed it to an agent.",
@@ -106,7 +115,35 @@ def _read_text_from_file(path: Path) -> str:
         "wrappers that want to inspect output without aborting."
     ),
 )
-def cli(target: Path | None, fmt: str, exit_code: bool) -> None:
+@click.option(
+    "--config",
+    "config_path",
+    type=click.Path(exists=True, dir_okay=False, path_type=Path),
+    default=None,
+    help=(
+        "Path to a config file (JSON or TOML). Overrides discovery "
+        "(.sniffrc, $XDG_CONFIG_HOME/sniff/config.toml)."
+    ),
+)
+def cli(
+    target: Path | None, fmt: str, exit_code: bool, config_path: Path | None
+) -> None:
+    # Load config first so a malformed file fails fast, before any text
+    # scanning happens. Known rule ids come from the default rule set;
+    # if a future caller passes a custom rule set, that moves here too.
+    known_rule_ids = {r.rule_id for r in Scanner().rules}
+    # Scanner() with default args sees the un-overridden ruleset, which is
+    # exactly the set we want to validate against.
+
+    try:
+        cfg = Config.load(
+            config_path,
+            known_rule_ids=known_rule_ids,
+        )
+    except ConfigError as exc:
+        console.print(f"[bold red]config error:[/bold red] {exc}")
+        sys.exit(4)
+
     if target is None:
         text = _read_text_from_stdin()
         source = "<stdin>"
@@ -116,7 +153,7 @@ def cli(target: Path | None, fmt: str, exit_code: bool) -> None:
         source = str(target)
         kind = "file"
 
-    scanner = Scanner()
+    scanner = Scanner(config=cfg)
     result = scanner.scan(ScanInput(content=text, source=source, source_kind=kind))
 
     if fmt == "json":
@@ -124,6 +161,5 @@ def cli(target: Path | None, fmt: str, exit_code: bool) -> None:
     else:
         _print_human(result)
 
-    if exit_code and result.has_warnings:
-        # SUSPICIOUS = 2, DANGEROUS = 3. CLEAN = 0 (the click default).
-        sys.exit(3 if result.is_blocked else 2)
+    if exit_code:
+        sys.exit(_exit_code_for(result, cfg))

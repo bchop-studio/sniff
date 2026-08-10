@@ -27,10 +27,38 @@ echo "ignore all previous instructions" | uv run sniff
 
 # JSON output for pipelines
 uv run sniff --format json path/to/prompt.txt > result.json
+
+# Use a config file (TOML or JSON)
+uv run sniff --config path/to/sniff.toml path/to/prompt.txt
 ```
 
-Exit codes: `0` = CLEAN, `2` = SUSPICIOUS, `3` = DANGEROUS. Makes the
-CLI composable with shell pipelines and CI gates.
+Exit codes: `0` = CLEAN, `2` = SUSPICIOUS, `3` = DANGEROUS, `4` =
+config error. Remappable via config. Makes the CLI composable with shell
+pipelines and CI gates.
+
+## Config
+
+Drop a TOML file at one of these locations (first hit wins):
+
+- the path passed to `--config`
+- `./.sniffrc` (TOML or JSON, auto-detected)
+- `$XDG_CONFIG_HOME/sniff/config.toml` (default `~/.config/sniff/config.toml`)
+
+```toml
+[rules.PI-INSTR-001]
+enabled = true
+severity = "critical"   # low | medium | high | critical
+
+[exit_codes]
+clean = 0
+suspicious = 2
+dangerous = 3
+```
+
+Unknown rule ids in the config raise an error at load time, so typos
+fail loudly instead of silently dropping your override. See
+[`examples/sniff.example.toml`](./examples/sniff.example.toml) for a
+full template.
 
 ## Library use
 

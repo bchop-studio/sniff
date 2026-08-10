@@ -49,9 +49,11 @@ URL — *before* it touches an agent. It is the seatbelt.
 
 ### P1 — next
 
-- **F1.1 Config file.** `.sniffrc` (or similar) to enable/disable rules,
-  set per-rule severity overrides, and define allow/deny patterns.
-- **F1.2 URL mode.** `sniff https://...` fetches and scans. Off by
+- [x] **P1.1 Config file.** `.sniffrc` (TOML/JSON) or
+  `$XDG_CONFIG_HOME/sniff/config.toml`. Toggles rules, overrides per-rule
+  severity, and remaps the CLEAN/SUSPICIOUS/DANGEROUS exit codes. Unknown
+  rule ids are a hard error so typos don't get silently dropped.
+- **P1.2 URL mode.** `sniff https://...` fetches and scans. Off by
   default in v0.1 — we keep network I/O out until the rules are
   trustworthy.
 - **F1.3 Structured findings export.** SARIF output for CI integration.

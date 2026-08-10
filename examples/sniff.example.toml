@@ -1,0 +1,28 @@
+# Example sniff config. Copy to `~/.config/sniff/config.toml` or
+# `./.sniffrc` (TOML is auto-detected from .toml extension). Drop into a
+# custom path and pass `--config <path>` to the CLI.
+
+[rules.PI-INSTR-001]
+enabled = true
+severity = "critical"     # one of: low, medium, high, critical
+
+[rules.PI-ROLE-001]
+enabled = true
+severity = "high"
+
+[rules.PI-SYS-001]
+enabled = true
+severity = "high"
+
+[rules.PI-TOOL-001]
+enabled = true
+severity = "critical"
+
+[rules.PI-EXFIL-001]
+enabled = true
+severity = "high"
+
+[exit_codes]
+clean = 0       # CLEAN verdict maps to exit code 0
+suspicious = 2  # SUSPICIOUS verdict maps to exit code 2
+dangerous = 3   # DANGEROUS verdict maps to exit code 3
