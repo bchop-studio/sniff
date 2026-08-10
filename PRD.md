@@ -53,9 +53,17 @@ URL — *before* it touches an agent. It is the seatbelt.
   `$XDG_CONFIG_HOME/sniff/config.toml`. Toggles rules, overrides per-rule
   severity, and remaps the CLEAN/SUSPICIOUS/DANGEROUS exit codes. Unknown
   rule ids are a hard error so typos don't get silently dropped.
-- **P1.2 URL mode.** `sniff https://...` fetches and scans. Off by
-  default in v0.1 — we keep network I/O out until the rules are
-  trustworthy.
+- [x] **P1.2 URL mode.** `sniff --allow-url https://...` fetches and
+  scans. Network I/O is opt-in: without the flag a URL target is
+  refused with a clear error. Fetches are SSRF-guarded — http(s) only,
+  no credentials in URLs, public IPs only (loopback, private,
+  link-local including cloud metadata, multicast, reserved all
+  refused), every redirect hop re-validated and capped, 1 MiB body
+  limit (over-limit is an error, never silent truncation), 10s timeout.
+  DNS rebinding is mitigated by re-validating every connection-time DNS
+  answer against the same block list (`guarded_getaddrinfo` in
+  `src/sniff/cli/url_fetch.py`). JS-rendered pages and paywalls are out
+  of scope: sniff scans whatever the server returns.
 - **F1.3 Structured findings export.** SARIF output for CI integration.
 - **F1.4 Library entry points per agent framework.** A small adapter
   per framework that wraps `Scanner.scan()` around the right message
@@ -106,8 +114,10 @@ is what keeps the proxy option open.
 
 - Should the BOM-strip behavior be configurable for inputs that
   legitimately start with a BOM? (Probably no — but flagging it.)
-- For F1.2 URL mode: how do we handle redirects, JS-rendered pages,
-  paywalls? Probably out of scope for v1, document the gap.
+- ~~For F1.2 URL mode: how do we handle redirects, JS-rendered pages,
+  paywalls?~~ Resolved in P1.2: redirects are followed (each hop
+  re-validated, capped at 5). JS-rendered pages and paywalls stay out
+  of scope — sniff scans the raw response body.
 
 ## Out of scope (forever)
 
