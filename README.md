@@ -86,8 +86,9 @@ curl -sS http://127.0.0.1:8765/v1/scan/messages \
 The gateway has strict body, message-count, and message-content limits.
 Every submitted message is screened as untrusted, regardless of its
 claimed role. It never logs request bodies or returns excerpts. Errors
-fail closed. The next proxy slice must not add forwarding until this
-boundary has a separate security review.
+fail closed. The completed
+[forwarding security review](docs/F2.1-FORWARDING-SECURITY-REVIEW.md) rejects
+a general-purpose proxy and defines the gates for one fixed-upstream slice.
 
 ## Library use
 

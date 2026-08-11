@@ -99,8 +99,11 @@ URL — *before* it touches an agent. It is the seatbelt.
   bounded message lists, returns verdicts without excerpts, never logs
   request bodies, and has no outbound HTTP client. It is deliberately not
   a forwarding proxy yet. Every submitted message is treated as untrusted
-  regardless of its claimed role. Forwarding requires a separate security
-  review and failure-path test matrix.
+  regardless of its claimed role. The forwarding security review is recorded
+  in [`docs/F2.1-FORWARDING-SECURITY-REVIEW.md`](docs/F2.1-FORWARDING-SECURITY-REVIEW.md).
+  It rejects a general-purpose proxy and conditionally approves only a fixed,
+  process-configured HTTPS upstream after the documented failure-path matrix
+  passes.
 - **F2.2 Heuristic layer.** Embedding-based similarity to known-bad
   corpora, on-device only.
 - **F2.3 Reporting.** Markdown/HTML summary across many scans.
