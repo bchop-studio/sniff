@@ -73,6 +73,25 @@ if result.is_blocked:
     raise ValueError("Blocked by sniff: prompt-injection detected.")
 ```
 
+### Agent framework messages
+
+```python
+from sniff.adapters import scan_messages
+from sniff.scanner import Scanner
+
+# Works with OpenAI/LangChain-style dicts and SDK message objects alike
+# (LangChain's `.type`/`.content` shape included; multimodal text parts
+# are joined and scanned).
+outcome = scan_messages(Scanner(), messages)  # user/tool/function scanned
+if outcome.is_blocked:
+    raise ValueError(f"Blocked by sniff: {outcome.findings[0][1].rule_id} "
+                     f"in messages[{outcome.findings[0][0]}]")
+```
+
+System and assistant messages are skipped by default (they're
+developer-authored); pass `roles={...}` to change which roles count as
+untrusted.
+
 ## Rule families (v0.1)
 
 | ID            | Name                  | Severity | Catches                                |

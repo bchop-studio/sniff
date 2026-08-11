@@ -56,6 +56,8 @@ A change that breaks any of these is not ready for review.
 
 - `src/sniff/scanner/` — detection logic. No I/O, no CLI imports.
   This is the seam.
+- `src/sniff/adapters/` — framework entry points (message lists in,
+  verdicts out). No CLI imports either; same seam rule as the scanner.
 - `src/sniff/cli/` — click entrypoint. Reads input, calls
   `Scanner.scan()`, formats output.
 - `tests/fixtures/` — text samples used by both the test suite and
