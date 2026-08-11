@@ -93,6 +93,14 @@ URL — *before* it touches an agent. It is the seatbelt.
   the option-3 product from the original discussion. The scanner core
   is already decoupled from the CLI specifically to make this a
   thin-transport addition rather than a rewrite.
+
+  **First safe slice shipped:** `sniff-gateway` is an authenticated,
+  loopback-only screening service at `POST /v1/scan/messages`. It accepts
+  bounded message lists, returns verdicts without excerpts, never logs
+  request bodies, and has no outbound HTTP client. It is deliberately not
+  a forwarding proxy yet. Every submitted message is treated as untrusted
+  regardless of its claimed role. Forwarding requires a separate security
+  review and failure-path test matrix.
 - **F2.2 Heuristic layer.** Embedding-based similarity to known-bad
   corpora, on-device only.
 - **F2.3 Reporting.** Markdown/HTML summary across many scans.
@@ -109,6 +117,9 @@ sniff/
 │   │   └── scanner.py      # Scanner class — pure function in/out
 │   ├── adapters/           # Framework entry points (F1.4) — no CLI imports.
 │   │   └── messages.py     # scan_messages: chat message lists in, verdict out
+│   ├── gateway/            # Authenticated local screening transport (F2.1)
+│   │   ├── server.py       # Loopback-only, bounded, non-forwarding HTTP server
+│   │   └── cli.py          # sniff-gateway command
 │   └── cli/                # Thin transport around the scanner.
 │       └── main.py
 └── tests/
