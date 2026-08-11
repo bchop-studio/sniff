@@ -72,9 +72,19 @@ URL — *before* it touches an agent. It is the seatbelt.
   SARIF levels (CRITICAL → error, HIGH/MEDIUM → warning, LOW → note),
   every rule carries its metadata under `tool.driver.rules`, and each
   finding gets a `charOffset` region into the scanned source.
-- **F1.4 Library entry points per agent framework.** A small adapter
+- [x] **F1.4 Library entry points per agent framework.** A small adapter
   per framework that wraps `Scanner.scan()` around the right message
-  boundary.
+  boundary. Shipped as `sniff.adapters.scan_messages(scanner, messages)`:
+  a framework-agnostic entry point that accepts OpenAI/LangChain-style
+  message dicts and Hermes/SDK-style objects with `.role`/`.content`
+  attributes (plus LangChain's `.type`/`.content` shape, where
+  "human"/"ai"/"system" map onto the role vocabulary), scans the
+  untrusted roles (user/tool/function by default, overridable), joins
+  OpenAI-style multimodal text parts into scannable text, skips
+  developer-authored system/assistant messages, and rolls the
+  per-message results up into one `MessageScanResult` with each finding
+  tied to its message index. Per-framework integrations are thin
+  wrappers over this; no framework SDK is a dependency of sniff.
 
 ### P2 — later
 
@@ -95,7 +105,10 @@ sniff/
 │   ├── scanner/            # Detection core — no I/O, no CLI imports.
 │   │   ├── models.py       # ScanInput, Finding, ScanResult, Verdict
 │   │   ├── rules.py        # Rule dataclass + DEFAULT_RULES
+│   │   ├── sarif.py        # SARIF 2.1.0 export (F1.3)
 │   │   └── scanner.py      # Scanner class — pure function in/out
+│   ├── adapters/           # Framework entry points (F1.4) — no CLI imports.
+│   │   └── messages.py     # scan_messages: chat message lists in, verdict out
 │   └── cli/                # Thin transport around the scanner.
 │       └── main.py
 └── tests/
@@ -103,8 +116,8 @@ sniff/
     └── test_scanner.py
 ```
 
-The hard rule: **the scanner must never import from `sniff.cli`.** That
-is what keeps the proxy option open.
+The hard rule: **the scanner and adapters must never import from
+`sniff.cli`.** That is what keeps the proxy option open.
 
 ## Acceptance criteria (v0.1)
 
