@@ -30,6 +30,7 @@ dev = [
 
 [project.scripts]
 sniff = "sniff.cli.main:cli"
+sniff-gateway = "sniff.gateway.cli:main"
 
 [project.urls]
 Issues = "https://github.com/BeardedChop/sniff/issues"

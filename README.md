@@ -63,6 +63,32 @@ fail loudly instead of silently dropping your override. See
 [`examples/sniff.example.toml`](./examples/sniff.example.toml) for a
 full template.
 
+## Local screening gateway
+
+The first F2.1 slice is an authenticated screening service. It listens on
+loopback only, accepts a bounded message list, and returns a verdict. It
+does **not** forward requests or make outbound network calls.
+
+```bash
+export SNIFF_GATEWAY_TOKEN="use-a-random-token-at-least-16-characters"
+uv run sniff-gateway --port 8765
+```
+
+Send `POST /v1/scan/messages` with a bearer token:
+
+```bash
+curl -sS http://127.0.0.1:8765/v1/scan/messages \
+  -H "Authorization: Bearer $SNIFF_GATEWAY_TOKEN" \
+  -H 'Content-Type: application/json' \
+  -d '{"messages":[{"role":"user","content":"your text"}]}'
+```
+
+The gateway has strict body, message-count, and message-content limits.
+Every submitted message is screened as untrusted, regardless of its
+claimed role. It never logs request bodies or returns excerpts. Errors
+fail closed. The next proxy slice must not add forwarding until this
+boundary has a separate security review.
+
 ## Library use
 
 ```python

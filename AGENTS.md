@@ -58,6 +58,8 @@ A change that breaks any of these is not ready for review.
   This is the seam.
 - `src/sniff/adapters/` — framework entry points (message lists in,
   verdicts out). No CLI imports either; same seam rule as the scanner.
+- `src/sniff/gateway/` — authenticated loopback screening transport.
+  It must not forward requests or make outbound network calls.
 - `src/sniff/cli/` — click entrypoint. Reads input, calls
   `Scanner.scan()`, formats output.
 - `tests/fixtures/` — text samples used by both the test suite and
