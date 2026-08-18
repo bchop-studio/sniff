@@ -172,6 +172,19 @@ def test_forwarding_invalid_json_zero_transport_calls() -> None:
     assert recorder.call_count == 0
 
 
+def test_forwarding_duplicate_json_keys_zero_transport_calls() -> None:
+    """Gate 12: duplicate security-relevant JSON keys are rejected."""
+    recorder = RecordingTransport()
+    raw_body = (
+        b'{"version":1,"messages":[{"role":"user","content":"hello"}],'
+        b'"messages":[{"role":"user","content":"world"}]}'
+    )
+    with running_server(transport=recorder) as base_url:
+        status, _ = forward(base_url, raw_body=raw_body)
+    assert status == 400
+    assert recorder.call_count == 0
+
+
 def test_forwarding_missing_messages_zero_transport_calls() -> None:
     recorder = RecordingTransport()
     with running_server(transport=recorder) as base_url:
@@ -381,6 +394,34 @@ def test_forwarding_rejects_duplicate_content_length() -> None:
                 f"Content-Length: {len(body)}\r\n"
                 f"Content-Length: 999\r\n"
                 f"Connection: close\r\n\r\n"
+            ).encode() + body
+            sock.sendall(raw)
+            response_data = sock.recv(8192)
+        finally:
+            sock.close()
+
+    response_text = response_data.decode("utf-8", errors="replace")
+    assert "400" in response_text
+    assert recorder.call_count == 0
+
+
+def test_forwarding_rejects_transfer_encoding() -> None:
+    """Gate 10: transfer-encoded requests cannot reach the transport."""
+    recorder = RecordingTransport()
+    body = json.dumps(clean_body(text_msg(CLEAN_TEXT))).encode("utf-8")
+    with running_server(transport=recorder) as base_url:
+        port = int(base_url.rsplit(":", 1)[1])
+        import socket
+
+        sock = socket.create_connection(("127.0.0.1", port), timeout=3)
+        try:
+            raw = (
+                f"POST {FORWARD_PATH} HTTP/1.1\r\n"
+                f"Host: 127.0.0.1:{port}\r\n"
+                f"Authorization: Bearer {TOKEN}\r\n"
+                f"Content-Type: application/json\r\n"
+                "Transfer-Encoding: chunked\r\n"
+                "Connection: close\r\n\r\n"
             ).encode() + body
             sock.sendall(raw)
             response_data = sock.recv(8192)
