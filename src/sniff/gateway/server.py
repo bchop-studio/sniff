@@ -49,6 +49,16 @@ _ALLOWED_MESSAGE_FIELDS: frozenset[str] = frozenset({"role", "content"})
 _ALLOWED_PART_FIELDS: frozenset[str] = frozenset({"type", "text"})
 
 
+def _reject_duplicate_json_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    """Reject duplicate object keys before schema validation can collapse them."""
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("duplicate JSON key")
+        result[key] = value
+    return result
+
+
 def _token_matches(presented: str, expected: str) -> bool:
     """Compare tokens without exposing validity through timing."""
     presented_bytes = hashlib.sha256(presented.encode("utf-8")).digest()
@@ -235,19 +245,22 @@ class _GatewayRequestHandler(BaseHTTPRequestHandler):
             self._write_error(HTTPStatus.NOT_IMPLEMENTED, "forwarding not enabled")
             return
 
-        body = self._read_body()
-        if body is None:
-            return
-
         # Gate 10: reject duplicate Content-Length.
         if self._has_duplicate_content_length():
             self._write_error(HTTPStatus.BAD_REQUEST, "invalid Content-Length")
             return
+        if self.headers.get_all("Transfer-Encoding"):
+            self._write_error(HTTPStatus.BAD_REQUEST, "unsupported Transfer-Encoding")
+            return
+
+        body = self._read_body()
+        if body is None:
+            return
 
         # Gate 12: parse and validate before any scan or transport call.
         try:
-            document = json.loads(body)
-        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
+            document = json.loads(body, object_pairs_hook=_reject_duplicate_json_keys)
+        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError, ValueError):
             self._write_error(HTTPStatus.BAD_REQUEST, "invalid JSON")
             return
 
