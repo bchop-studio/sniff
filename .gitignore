@@ -16,7 +16,6 @@ htmlcov/
 # Env / secrets — never commit
 .env
 .env.*
-!.env.example
 
 # Editor / OS
 .DS_Store

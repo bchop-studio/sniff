@@ -1,6 +1,11 @@
-# sniff
+# Sniff
+
+![Sniff, a local prompt-injection scanner](./cover.png)
 
 > A local-first prompt-injection scanner. Smells before you swallow.
+
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-00E5D9)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-FF007A)](./LICENSE)
 
 `sniff` is a small CLI you run on text — a file, a paste, a URL —
 *before* you feed it to an AI agent. It catches the common shapes of
@@ -11,10 +16,10 @@ whether to pass, caution, or block.
 ## Install
 
 ```bash
-# from the project root
-uv venv
-uv pip install -e '.[dev]'
+uv tool install git+https://github.com/BeardedChop/sniff.git
 ```
+
+For local development, clone the repository and run `uv sync --extra dev`.
 
 ## Use
 
@@ -129,9 +134,14 @@ untrusted.
 | PI-TOOL-001   | Tool-call forgery     | CRITICAL | Forged `tool_calls` / `<tool_use>` blocks |
 | PI-EXFIL-001  | Exfiltration hook     | HIGH     | "forward this to", webhook hosts       |
 
-## Status
+## What Sniff does not promise
 
-Private. v0.1 alpha. Built for BChop's own local agents first.
+Sniff is one local safety layer, not a guarantee that every prompt injection
+will be detected. Keep normal permission boundaries, sandboxing, and human
+review around agents that can take real actions.
 
-See [PRD.md](./PRD.md) for the full plan, [AGENTS.md](./AGENTS.md) for
-how agents working in this repo are expected to behave.
+## License
+
+MIT. See [LICENSE](./LICENSE).
+
+Built by [BChop Studio](https://bchop.dev) · [@BChopLXXXII](https://x.com/BChopLXXXII)
