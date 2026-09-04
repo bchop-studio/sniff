@@ -4,8 +4,9 @@ version = "0.1.0"
 description = "Local prompt-injection scanner for AI agent inputs. Smells before you swallow."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Proprietary" }
-authors = [{ name = "BeardedChop" }]
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "BChop Studio" }]
 keywords = ["prompt-injection", "security", "ai-agents", "scanner"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -33,6 +34,8 @@ sniff = "sniff.cli.main:cli"
 sniff-gateway = "sniff.gateway.cli:main"
 
 [project.urls]
+Homepage = "https://github.com/BeardedChop/sniff"
+Repository = "https://github.com/BeardedChop/sniff"
 Issues = "https://github.com/BeardedChop/sniff/issues"
 
 [build-system]
@@ -41,6 +44,15 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sniff"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/LICENSE",
+    "/README.md",
+    "/cover.png",
+    "/pyproject.toml",
+    "/src",
+]
 
 [tool.ruff]
 line-length = 100
