@@ -81,7 +81,7 @@ def result_to_sarif(result: ScanResult, rules: tuple[Rule, ...]) -> dict[str, An
                     "driver": {
                         "name": "sniff",
                         "version": "0.1.0",
-                        "informationUri": "https://github.com/BeardedChop/sniff",
+                        "informationUri": "https://github.com/bchop-studio/sniff",
                         "rules": [_rule_metadata(r) for r in rules],
                     }
                 },
