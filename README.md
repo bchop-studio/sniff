@@ -16,7 +16,7 @@ whether to pass, caution, or block.
 ## Install
 
 ```bash
-uv tool install git+https://github.com/BeardedChop/sniff.git
+uv tool install git+https://github.com/bchop-studio/sniff.git
 ```
 
 For local development, clone the repository and run `uv sync --extra dev`.

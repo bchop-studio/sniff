@@ -277,7 +277,7 @@ class _UrllibOpener:
 
     def open(self, url: str, *, timeout: float) -> RawResponse:
         request = urllib.request.Request(
-            url, headers={"User-Agent": "sniff/0.1 (+https://github.com/BeardedChop/sniff)"}
+            url, headers={"User-Agent": "sniff/0.1 (+https://github.com/bchop-studio/sniff)"}
         )
         with _GUARD_LOCK:
             original = socket.getaddrinfo

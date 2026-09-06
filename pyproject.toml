@@ -34,9 +34,9 @@ sniff = "sniff.cli.main:cli"
 sniff-gateway = "sniff.gateway.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/BeardedChop/sniff"
-Repository = "https://github.com/BeardedChop/sniff"
-Issues = "https://github.com/BeardedChop/sniff/issues"
+Homepage = "https://github.com/bchop-studio/sniff"
+Repository = "https://github.com/bchop-studio/sniff"
+Issues = "https://github.com/bchop-studio/sniff/issues"
 
 [build-system]
 requires = ["hatchling"]
