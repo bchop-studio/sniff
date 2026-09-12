@@ -28,7 +28,7 @@ from sniff.gateway.transport import (
     Transport,
     TransportError,
 )
-from sniff.scanner import Scanner
+from sniff.scanner import ScanInput, Scanner
 from sniff.scanner.models import Verdict
 
 MAX_BODY_BYTES = 256 * 1024
@@ -66,20 +66,27 @@ def _token_matches(presented: str, expected: str) -> bool:
     return hmac.compare_digest(presented_bytes, expected_bytes)
 
 
-def _content_size(message: object) -> int:
-    """Return the UTF-8 size of text content represented by a JSON message."""
+def _scan_message_text(message: object) -> str | None:
+    """Normalize one supported scan message, rejecting anything skipped."""
     if not isinstance(message, dict):
-        return 0
+        return None
     content = message.get("content")
     if isinstance(content, str):
-        return len(content.encode("utf-8", errors="replace"))
-    if isinstance(content, list):
-        return sum(
-            len(part["text"].encode("utf-8", errors="replace"))
-            for part in content
-            if isinstance(part, dict) and isinstance(part.get("text"), str)
-        )
-    return 0
+        return content
+    if not isinstance(content, list) or not content:
+        return None
+
+    texts: list[str] = []
+    for part in content:
+        if (
+            not isinstance(part, dict)
+            or set(part) != _ALLOWED_PART_FIELDS
+            or part.get("type") != "text"
+            or not isinstance(part.get("text"), str)
+        ):
+            return None
+        texts.append(part["text"])
+    return " ".join(texts)
 
 
 def _findings_payload(result: Any) -> list[dict[str, object]]:
@@ -191,8 +198,8 @@ class _GatewayRequestHandler(BaseHTTPRequestHandler):
         if body is None:
             return
         try:
-            document = json.loads(body)
-        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError):
+            document = json.loads(body, object_pairs_hook=_reject_duplicate_json_keys)
+        except (json.JSONDecodeError, UnicodeDecodeError, RecursionError, ValueError):
             self._write_error(HTTPStatus.BAD_REQUEST, "invalid JSON")
             return
         if not isinstance(document, dict) or not isinstance(document.get("messages"), list):
@@ -200,29 +207,60 @@ class _GatewayRequestHandler(BaseHTTPRequestHandler):
             return
 
         messages = cast(list[object], document["messages"])
+        if not messages:
+            self._write_error(HTTPStatus.BAD_REQUEST, "messages must not be empty")
+            return
         if len(messages) > MAX_MESSAGES:
             self._write_error(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "too many messages")
             return
-        if any(_content_size(message) > MAX_MESSAGE_CONTENT_BYTES for message in messages):
-            self._write_error(
-                HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
-                "message content too large",
-            )
-            return
 
-        screening_messages = [
-            {"role": "user", "content": message.get("content")}
-            if isinstance(message, dict)
-            else message
-            for message in messages
-        ]
+        screening_messages: list[dict[str, str]] = []
+        for message in messages:
+            text = _scan_message_text(message)
+            if text is None:
+                self._write_error(HTTPStatus.BAD_REQUEST, "invalid message content")
+                return
+            if len(text.encode("utf-8", errors="replace")) > MAX_MESSAGE_CONTENT_BYTES:
+                self._write_error(
+                    HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                    "message content too large",
+                )
+                return
+            screening_messages.append({"role": "user", "content": text})
+
         result = scan_messages(server.scanner, screening_messages, roles={"user"})
+        aggregate_result = server.scanner.scan(
+            ScanInput(
+                content="\n".join(message["content"] for message in screening_messages),
+                source="aggregate",
+                source_kind="text",
+            )
+        )
+        worst_verdict = result.worst_verdict
+        if aggregate_result.verdict is Verdict.DANGEROUS:
+            worst_verdict = Verdict.DANGEROUS
+        elif (
+            aggregate_result.verdict is Verdict.SUSPICIOUS
+            and worst_verdict is Verdict.CLEAN
+        ):
+            worst_verdict = Verdict.SUSPICIOUS
+
+        findings = _findings_payload(result)
+        findings.extend(
+            {
+                "message_index": -1,
+                "rule_id": finding.rule_id,
+                "rule_name": finding.rule_name,
+                "severity": finding.severity.value,
+            }
+            for finding in aggregate_result.findings
+        )
         response = {
-            "verdict": result.worst_verdict.value,
-            "blocked": result.is_blocked,
+            "verdict": worst_verdict.value,
+            "blocked": worst_verdict is Verdict.DANGEROUS,
             "scanned": result.scanned,
             "skipped": result.skipped,
-            "findings": _findings_payload(result),
+            "findings": findings,
         }
         self._write_json(HTTPStatus.OK, response)
 
