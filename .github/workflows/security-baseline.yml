@@ -1,0 +1,84 @@
+name: Security Baseline
+
+on:
+  pull_request:
+    branches: ["main"]
+  push:
+    branches: ["main"]
+  schedule:
+    - cron: "23 9 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-baseline-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+        with:
+          version: "0.12.13"
+          enable-cache: true
+
+      - name: Verify lock file
+        run: uv lock --check
+
+      - name: Install locked development dependencies
+        run: uv sync --extra dev --locked
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Test
+        run: uv run pytest
+
+      - name: Build package
+        run: uv build --out-dir "$RUNNER_TEMP/dist"
+
+      - name: Audit runtime dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          uv export --no-dev --no-emit-project --no-hashes --locked \
+            --output-file "$RUNNER_TEMP/requirements.txt"
+          uvx --from pip-audit==2.10.1 pip-audit \
+            --requirement "$RUNNER_TEMP/requirements.txt"
+
+      - name: Reject sensitive tracked filenames
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import PurePosixPath
+          import subprocess
+
+          tracked = subprocess.check_output(["git", "ls-files"], text=True).splitlines()
+          blocked = []
+          for path in tracked:
+              name = PurePosixPath(path).name.lower()
+              is_secret_env = name == ".env" or (
+                  name.startswith(".env.") and name != ".env.example"
+              )
+              if is_secret_env or name.endswith((".pem", ".key", ".p12", ".pfx")) or name in {
+                  "id_rsa",
+                  "id_ed25519",
+              }:
+                  blocked.append(path)
+          if blocked:
+              raise SystemExit("Sensitive tracked filenames: " + ", ".join(blocked))
+          print("sensitive tracked filename check passed")
+          PY
