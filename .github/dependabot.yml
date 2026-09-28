@@ -1,19 +1,19 @@
 version: 2
-updates:
-  - package-ecosystem: "uv"
-    directory: "/"
+multi-ecosystem-groups:
+  weekly-dependencies:
     schedule:
       interval: "weekly"
       day: "monday"
       time: "10:00"
       timezone: "America/New_York"
-    open-pull-requests-limit: 5
-
+updates:
+  - package-ecosystem: "uv"
+    directory: "/"
+    patterns:
+      - "*"
+    multi-ecosystem-group: "weekly-dependencies"
   - package-ecosystem: "github-actions"
     directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-      time: "10:20"
-      timezone: "America/New_York"
-    open-pull-requests-limit: 5
+    patterns:
+      - "*"
+    multi-ecosystem-group: "weekly-dependencies"
