@@ -45,9 +45,13 @@ def test_all_remote_actions_are_pinned_to_full_commits() -> None:
             assert FULL_SHA.fullmatch(reference), f"Unpinned action in {path}: {line}"
 
 
-def test_dependabot_updates_uv_and_actions_weekly() -> None:
+def test_dependabot_groups_uv_and_actions_weekly() -> None:
     config = _read(ROOT / ".github" / "dependabot.yml")
 
     assert 'package-ecosystem: "uv"' in config
     assert 'package-ecosystem: "github-actions"' in config
-    assert config.count('interval: "weekly"') == 2
+    assert config.count('multi-ecosystem-group: "weekly-dependencies"') == 2
+    assert config.count('interval: "weekly"') == 1
+    assert 'day: "monday"' in config
+    assert 'time: "10:00"' in config
+    assert 'timezone: "America/New_York"' in config
