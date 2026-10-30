@@ -124,12 +124,16 @@ def test_invalid_utf8_is_rejected_as_bad_json() -> None:
     assert response == {"error": "invalid JSON"}
 
 
-def test_deeply_nested_json_is_rejected_as_bad_json() -> None:
+def test_deeply_nested_json_is_rejected() -> None:
     nested = b'{"messages":' + b"[" * 1000 + b"]" * 1000 + b"}"
     with running_server() as base_url:
         status, response = request(base_url, raw_body=nested)
     assert status == 400
-    assert response == {"error": "invalid JSON"}
+    # Python versions differ on whether parsing reaches message validation.
+    assert response in (
+        {"error": "invalid JSON"},
+        {"error": "invalid message content"},
+    )
 
 
 def test_missing_token_is_rejected() -> None:
